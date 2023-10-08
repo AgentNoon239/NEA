@@ -28,6 +28,7 @@ while True:
 	v = temp_sensor.value
 	t = convert_to_temp(v,*params)
 	f.writelines([f"{time.ctime()}, {v}, {t}"])
+	f.flush()
 
 	ret, frame = cam.read()
 
