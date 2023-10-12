@@ -30,11 +30,13 @@ while True:
 	temp_pos = lines[1].find("t=")
 	temp = float(lines[1][temp_pos+2:]) / 1000
 
+	print(temp)
 	f.writelines([f"{time.ctime()}, {temp}"])
 	f.flush()
 
 	ret, frame = cam.read()
 
+	print(ret)
 	if ret:
 		cv2.imwrite(f"imgs/{time.ctime()}.png",frame)
 
