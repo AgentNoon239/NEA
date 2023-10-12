@@ -1,33 +1,36 @@
 import time
-import cv2
-import math 
-from scipy import optimize
+import os
+import glob
 
-from gpiozero import MCP3008
+import cv2
 
 f = open("data.csv","a+")
 
-with open("calibration.csv") as f:
-	xdata, ydata =zip(*[map(float,i.split(",")) for i in f.read().splitlines()])
-
 cam = cv2.VideoCapture(0)
+ 
+os.system('modprobe w1-gpio')
+os.system('modprobe w1-therm')
+ 
+base_dir = '/sys/bus/w1/devices/'
+device_folder = glob.glob(base_dir + '28*')[0]
+device_file = device_folder + '/w1_slave'
 
-def convert_to_temp(v,a,b):
-	R2 = 10000.0 / ((1023.0 / v) - 1.0);
-	v = R2 / 10000.0;
-	v = math.log(v) / a
-	v = v + 1.0 / (25.0 + 273.15);
-	v = (1.0 / v) - 273.15; 
-	return v + b
-
-params, _ = optimize.curve_fit(convert_to_temp,xdata,ydata,[3950,0])
-
-temp_sensor = MCP3008(0)
+def get_temp_file():
+	with open(device_file,"r") as f:
+		return f.readlines()
 
 while True:
-	v = temp_sensor.value
-	t = convert_to_temp(v,*params)
-	f.writelines([f"{time.ctime()}, {v}, {t}"])
+	while True:
+		lines = get_temp_file()
+		if lines[0].strip()[-3:] == "YES":
+			break
+			
+		time.sleep(0.2)
+
+	temp_pos = lines[1].find("t=")
+	temp = float(lines[1][temp_pos+2:]) / 1000
+
+	f.writelines([f"{time.ctime()}, {temp}"])
 	f.flush()
 
 	ret, frame = cam.read()
